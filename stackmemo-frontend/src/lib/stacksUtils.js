@@ -1,14 +1,41 @@
-import { StacksMocknet } from '@stacks/network';
-import { callReadOnlyFunction, contractPrincipalCV, uintCV } from '@stacks/transactions';
+import { StacksTestnet } from '@stacks/network';
+import { 
+  callReadOnlyFunction, 
+  contractPrincipalCV, 
+  uintCV,
+  stringUtf8CV,
+  cvToString
+} from '@stacks/transactions';
 
-const network = new StacksMocknet();
+const network = new StacksTestnet();
 
 const contractAddress = 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM'; // Replace with your contract address
 const contractName = 'stackmemo'; // Replace with your contract name
 
-export async function getMessages(userAddress) {
+export async function createMessage(doContractCall, message, unlockHeight) {
+  const functionName = 'store-message';
+  const functionArgs = [
+    stringUtf8CV(message),
+    uintCV(unlockHeight)
+  ];
+
+  const options = {
+    network,
+    contractAddress,
+    contractName,
+    functionName,
+    functionArgs,
+    onFinish: data => {
+      console.log('Transaction:', data);
+    },
+  };
+
+  await doContractCall(options);
+}
+
+export async function getMessage(userAddress, messageId) {
   const functionName = 'get-message';
-  const functionArgs = [uintCV(1)]; // Example: fetching message with ID 1
+  const functionArgs = [uintCV(messageId)];
 
   try {
     const result = await callReadOnlyFunction({
@@ -20,13 +47,37 @@ export async function getMessages(userAddress) {
       senderAddress: userAddress,
     });
 
-    console.log('Result:', result);
-    // TODO: Parse and return the result
-    return [];
+    if (result.value) {
+      // Parse the result
+      const messageData = result.value.data;
+      return {
+        id: messageId,
+        sender: cvToString(messageData['sender']),
+        message: cvToString(messageData['message']),
+        unlockHeight: Number(messageData['unlock-height'].value)
+      };
+    }
+    return null;
   } catch (error) {
-    console.error('Error fetching messages:', error);
-    return [];
+    console.error('Error fetching message:', error);
+    return null;
   }
 }
 
-// Add more functions here to interact with your smart contract
+export async function getMessages(userAddress) {
+  // Since there's no function to get all messages, we'll fetch them one by one
+  const messages = [];
+  let messageId = 1;
+  
+  while (true) {
+    const message = await getMessage(userAddress, messageId);
+    if (message) {
+      messages.push(message);
+      messageId++;
+    } else {
+      break; // No more messages
+    }
+  }
+
+  return messages;
+}
