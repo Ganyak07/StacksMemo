@@ -14,9 +14,8 @@
 ;; Function to store a new message
 (define-public (store-message (message (string-utf8 1024)) (unlock-height uint))
   (let
-    (
-      (new-id (+ (var-get message-count) u1))
-    )
+    ((new-id (+ (var-get message-count) u1)))
+    (asserts! (< unlock-height u9999999999) (err u500)) ;; Prevent unreasonably high unlock heights
     (map-set messages
       { id: new-id }
       {
@@ -33,9 +32,7 @@
 ;; Function to retrieve a message
 (define-read-only (get-message (id uint))
   (let
-    (
-      (msg (unwrap! (map-get? messages { id: id }) (err u404)))
-    )
+    ((msg (unwrap! (map-get? messages { id: id }) (err u404))))
     (if (>= block-height (get unlock-height msg))
       (ok msg)
       (err u403)
