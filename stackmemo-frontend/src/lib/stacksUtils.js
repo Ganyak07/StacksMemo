@@ -6,11 +6,12 @@ import {
   stringUtf8CV,
   cvToString
 } from '@stacks/transactions';
+import CryptoJS from 'crypto-js';
 
 const network = new StacksTestnet();
 
-const contractAddress = 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM'; // Replace with your contract address
-const contractName = 'stackmemo'; // Replace with your contract name
+const contractAddress = 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM'; // Replace with  contract address
+const contractName = 'stackmemo'; // Replace with  contract name
 
 export async function createMessage(doContractCall, message, unlockHeight) {
   const functionName = 'store-message';
@@ -48,15 +49,16 @@ export async function getMessage(userAddress, messageId) {
     });
 
     if (result.value) {
-      // Parse the result
-      const messageData = result.value.data;
-      return {
-        id: messageId,
-        sender: cvToString(messageData['sender']),
-        message: cvToString(messageData['message']),
-        unlockHeight: Number(messageData['unlock-height'].value)
-      };
-    }
+        const messageData = result.value.data;
+        return {
+          id: messageId,
+          sender: cvToString(messageData['sender']),
+          message: cvToString(messageData['message']),
+          unlockHeight: Number(messageData['unlock-height'].value),
+          isUnlocked: messageData['unlock-height'].value <= currentBlockHeight
+        };
+      }
+    
     return null;
   } catch (error) {
     console.error('Error fetching message:', error);
@@ -81,3 +83,14 @@ export async function getMessages(userAddress) {
 
   return messages;
 }
+// Encryption function
+export function encryptMessage(message, passphrase) {
+    return CryptoJS.AES.encrypt(message, passphrase).toString();
+  }
+  
+  // Decryption function
+  export function decryptMessage(encryptedMessage, passphrase) {
+    const bytes = CryptoJS.AES.decrypt(encryptedMessage, passphrase);
+    return bytes.toString(CryptoJS.enc.Utf8);
+  }
+  
