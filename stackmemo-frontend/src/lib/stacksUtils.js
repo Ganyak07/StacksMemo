@@ -13,6 +13,15 @@ const network = new StacksTestnet();
 const contractAddress = 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM'; // Replace with  contract address
 const contractName = 'stackmemo'; // Replace with  contract name
 
+
+
+// Add or modify this function to include the export keyword
+export async function getCurrentBlockHeight() {
+  const response = await fetch(`https://stacks-node-api.testnet.stacks.co/v2/info`);
+  const data = await response.json();
+  return data.stacks_tip_height;
+}
+
 export async function createMessage(doContractCall, message, unlockHeight) {
   const functionName = 'store-message';
   const functionArgs = [
